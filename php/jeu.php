@@ -7,17 +7,15 @@ if (!isset($_SESSION['pseudo']) || empty($_SESSION['pseudo'])) {
 
 $partie_id = $_GET['partie'] ?? null;
 if (!$partie_id) die("Partie invalide");
-
-// Simulation de la position actuelle (à remplacer par votre système de suivi)
 $_SESSION['player_positions'] = $_SESSION['player_positions'] ?? [1, 1, 1, 1];
-$current_player = 3; // Le joueur jaune (pawn-3)
+$current_player = 3;
 ?>
 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Portal Game - Plateau</title>
+    <title>PortalHole - Plateau</title>
     <style>
         body {
             background: #0f0c29;
@@ -126,7 +124,7 @@ $current_player = 3; // Le joueur jaune (pawn-3)
 
         .pawn-1 { background: #ff3366; color: #ff3366; }
         .pawn-2 { background: #00ccff; color: #00ccff; }
-        .pawn-3 { background: #ffcc00; color: #ffcc00; } /* Pion jaune */
+        .pawn-3 { background: #ffcc00; color: #ffcc00; }
         .pawn-4 { background: #aa66ff; color: #aa66ff; }
 
         /* Dé */
@@ -183,7 +181,6 @@ $current_player = 3; // Le joueur jaune (pawn-3)
 <body>
     <div class="game-container">
         <div class="game-board" id="gameBoard">
-            <!-- Cases générées dynamiquement -->
             <?php 
             $portals = [4 => 25, 8 => 52, 36 => 77];
             $blackholes = [30 => 12, 75 => 45, 95 => 63];
@@ -205,28 +202,24 @@ $current_player = 3; // Le joueur jaune (pawn-3)
                 </div>
             <?php endfor; ?>
             
-            <!-- Pions joueurs -->
             <div class="pawn pawn-1" id="player1"></div>
             <div class="pawn pawn-2" id="player2"></div>
-            <div class="pawn pawn-3" id="player3"></div> <!-- Pion jaune -->
+            <div class="pawn pawn-3" id="player3"></div>
             <div class="pawn pawn-4" id="player4"></div>
         </div>
 
-        <!-- Bouton de dé -->
         <div class="dice-container">
             <div class="dice" id="dice">?</div>
         </div>
     </div>
 
     <script>
-        // Variables du jeu
         let currentPosition = <?= $_SESSION['player_positions'][$current_player - 1] ?>;
         const portals = <?= json_encode($portals) ?>;
         const blackholes = <?= json_encode($blackholes) ?>;
-        const playerId = 'player3'; // Pion jaune
+        const playerId = 'player3';
         let isMoving = false;
 
-        // Positionnement initial
         function positionPawns() {
             <?php for ($i = 1; $i <= 4; $i++): ?>
                 positionPawn('player<?= $i ?>', <?= $_SESSION['player_positions'][$i - 1] ?>);
@@ -248,7 +241,6 @@ $current_player = 3; // Le joueur jaune (pawn-3)
             pawn.style.animation = 'pawn-glow 2s infinite';
         }
 
-        // Système de dé
         document.getElementById('dice').addEventListener('click', rollDice);
 
         function rollDice() {
@@ -267,12 +259,10 @@ $current_player = 3; // Le joueur jaune (pawn-3)
             }, 1500);
         }
 
-        // Déplacement du joueur
         function movePlayer(steps) {
             isMoving = true;
             let newPosition = currentPosition + steps;
             
-            // Animation pas à pas
             let step = 0;
             const moveInterval = setInterval(() => {
                 if (step < steps) {
@@ -281,7 +271,6 @@ $current_player = 3; // Le joueur jaune (pawn-3)
                 } else {
                     clearInterval(moveInterval);
                     
-                    // Vérifier les portails/trous noirs
                     if (portals[newPosition]) {
                         newPosition = portals[newPosition];
                         setTimeout(() => {
@@ -302,7 +291,6 @@ $current_player = 3; // Le joueur jaune (pawn-3)
                     currentPosition = newPosition;
                     isMoving = false;
                     
-                    // Mettre à jour la position en PHP (simulation)
                     fetch('update_position.php?player=3&position=' + newPosition)
                         .catch(err => console.error('Erreur de mise à jour:', err));
                 }
@@ -317,7 +305,6 @@ $current_player = 3; // Le joueur jaune (pawn-3)
             }
         }
 
-        // Initialisation
         document.addEventListener('DOMContentLoaded', positionPawns);
     </script>
 </body>
