@@ -1,8 +1,8 @@
 <?php
 session_start();
 
-if (isset($_POST['player_name']) && !empty(trim($_POST['player_name']))) {
-    $_SESSION['player_name'] = htmlspecialchars(trim($_POST['player_name']));
+if (isset($_POST['pseudo']) && !empty(trim($_POST['pseudo']))) {
+    $_SESSION['pseudo'] = htmlspecialchars(trim($_POST['pseudo']));
     header('Location: php/menu.php');
     exit;
 }
@@ -71,7 +71,7 @@ if (isset($_POST['player_name']) && !empty(trim($_POST['player_name']))) {
   <div class="container">
     <h1>Bienvenue</h1>
     <form method="POST" action="">
-      <input type="text" name="player_name" placeholder="Entrez votre nom" required maxlength="20" />
+      <input type="text" name="pseudo" placeholder="Entrez votre nom" required maxlength="20" />
       <button type="submit">Continuer</button>
     </form>
     <small>Jouez jusqu'à 8 joueurs</small>

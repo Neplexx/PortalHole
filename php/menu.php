@@ -1,12 +1,12 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['player_name']) || empty($_SESSION['player_name'])) {
+if (!isset($_SESSION['pseudo']) || empty($_SESSION['pseudo'])) {
     header('Location: index.php');
     exit;
 }
 
-$player_name = htmlspecialchars($_SESSION['player_name']);
+$pseudo = htmlspecialchars($_SESSION['pseudo']);
 ?>
 
 <!DOCTYPE html>
@@ -63,7 +63,7 @@ $player_name = htmlspecialchars($_SESSION['player_name']);
 <body>
 
 <header>
-  Bonjour, <?php echo $player_name; ?>
+  Bonjour, <?php echo $pseudo; ?>
 </header>
 
 <main>
