@@ -200,8 +200,8 @@ $current_player = $stmt->fetchColumn();
     <div class="game-container">
         <div class="game-board" id="gameBoard">
             <?php 
-            $portals = [4 => 25, 8 => 52, 36 => 77];
-            $blackholes = [30 => 12, 75 => 45, 95 => 63];
+            $portals = [];
+            $blackholes = [];
             
             for ($i = 100; $i >= 1; $i--): 
                 $row = 10 - floor(($i - 1) / 10);

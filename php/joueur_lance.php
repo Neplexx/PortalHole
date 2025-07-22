@@ -7,35 +7,63 @@ $joueur = $_GET['joueur'] ?? 0;
 $pdo = new PDO("mysql:host=localhost;dbname=portalholedata", 'root', 'root');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-$de = random_int(1, 6);
+$stmt = $pdo->prepare("SELECT etat FROM parties WHERE id = ?");
+$stmt->execute([$partie_id]);
+$partie = $stmt->fetch();
+
+if (!$partie || $partie['etat'] !== 'en_cours') {
+    die(json_encode(["error" => "Partie non disponible"]));
+}
 
 $stmt = $pdo->prepare("SELECT position FROM joueurs WHERE partie_id = ? AND numero = ?");
 $stmt->execute([$partie_id, $joueur]);
 $position = $stmt->fetchColumn();
 
-$nouvelle_position = min(100, $position + $de);
+if ($position >= 100) {
+    echo json_encode([
+        "position" => 100,
+        "de" => 0,
+        "suivant" => $joueur,
+        "victoire" => true
+    ]);
+    exit;
+}
+
+$de = random_int(1, 6);
+
+$nouvelle_position = $position + $de;
+if ($nouvelle_position > 100) {
+    $nouvelle_position = 100 - ($nouvelle_position - 100);
+}
 
 $stmt = $pdo->prepare("UPDATE joueurs SET position = ? WHERE partie_id = ? AND numero = ?");
 $stmt->execute([$nouvelle_position, $partie_id, $joueur]);
 
+$victoire = ($nouvelle_position == 100);
+
 $stmt = $pdo->prepare("SELECT numero FROM joueurs 
-                      WHERE partie_id = ? AND est_hote = 0 
+                      WHERE partie_id = ? AND est_hote = 0 AND position < 100
                       ORDER BY numero ASC");
 $stmt->execute([$partie_id]);
-$joueurs = $stmt->fetchAll(PDO::FETCH_COLUMN);
+$joueurs_actifs = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
-if (empty($joueurs)) {
-    die(json_encode(["error" => "Aucun joueur trouvé"]));
+if (empty($joueurs_actifs)) {
+    $pdo->prepare("UPDATE parties SET etat = 'terminee', current_player = 0 WHERE id = ?")
+        ->execute([$partie_id]);
+    $suivant = 0;
+} else {
+    $current_index = array_search($joueur, $joueurs_actifs);
+    
+    if ($current_index === false) {
+        $suivant = $joueurs_actifs[0];
+    } else {
+        $next_index = ($current_index + 1) % count($joueurs_actifs);
+        $suivant = $joueurs_actifs[$next_index];
+    }
 }
-
-$current_index = array_search($joueur, $joueurs);
-$next_index = ($current_index + 1) % count($joueurs);
-$suivant = $joueurs[$next_index];
 
 $pdo->prepare("UPDATE parties SET current_player = ?, dice_result = ? WHERE id = ?")
     ->execute([$suivant, $de, $partie_id]);
-
-$victoire = ($nouvelle_position >= 100);
 
 header('Content-Type: application/json');
 echo json_encode([
@@ -44,3 +72,4 @@ echo json_encode([
     "suivant" => $suivant,
     "victoire" => $victoire,
 ]);
+?>
