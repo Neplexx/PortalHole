@@ -1,5 +1,8 @@
 <?php
-header('Content-Type: application/json');
+session_start();
+
+$partie_id = $_GET['partie'] ?? null;
+if (!$partie_id) exit(json_encode(['error' => 'partie manquante']));
 
 $servername = 'localhost';
 $username = 'root';
@@ -9,21 +12,29 @@ $dbname = 'portalholedata';
 $pdo = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-$partie_id = $_GET['partie'] ?? null;
-if (!$partie_id) {
-    echo json_encode([]);
-    exit;
-}
-
-// si salle suppr
-$stmt = $pdo->prepare("SELECT COUNT(*) FROM parties WHERE id = ?");
+$stmt = $pdo->prepare("SELECT etat FROM parties WHERE id = ?");
 $stmt->execute([$partie_id]);
-if ($stmt->fetchColumn() == 0) {
+$partie = $stmt->fetch();
+
+if (!$partie) {
     echo json_encode(['deleted' => true]);
     exit;
 }
 
-$stmt = $pdo->prepare("SELECT pseudo FROM joueurs WHERE partie_id = ?");
+$stmt = $pdo->prepare("SELECT pseudo FROM joueurs WHERE partie_id = ? AND est_hote = 0");
 $stmt->execute([$partie_id]);
-echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-?>
+$joueurs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+$numero = null;
+if (isset($_SESSION['pseudo'])) {
+    $stmt = $pdo->prepare("SELECT numero FROM joueurs WHERE pseudo = ? AND partie_id = ?");
+    $stmt->execute([$_SESSION['pseudo'], $partie_id]);
+    $result = $stmt->fetch(PDO::FETCH_ASSOC);
+    $numero = $result ? $result['numero'] : null;
+}
+
+echo json_encode([
+    'etat' => $partie['etat'],
+    'joueur_numero' => $numero,
+    'joueurs' => $joueurs
+]);

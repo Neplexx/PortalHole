@@ -7,8 +7,26 @@ if (!isset($_SESSION['pseudo']) || empty($_SESSION['pseudo'])) {
 
 $partie_id = $_GET['partie'] ?? null;
 if (!$partie_id) die("Partie invalide");
-$_SESSION['player_positions'] = $_SESSION['player_positions'] ?? [1, 1, 1, 1];
-$current_player = 3;
+
+// Connexion à la base de données
+$pdo = new PDO("mysql:host=localhost;dbname=portalholedata", 'root', 'root');
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+// Récupérer les positions depuis la base de données
+$stmt = $pdo->prepare("SELECT numero, position FROM joueurs WHERE partie_id = ? ORDER BY numero");
+$stmt->execute([$partie_id]);
+$joueurs_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Préparer les positions pour le JavaScript
+$positions = [1 => 1, 2 => 1, 3 => 1, 4 => 1]; // Valeurs par défaut
+foreach ($joueurs_data as $joueur) {
+    $positions[$joueur['numero']] = $joueur['position'];
+}
+
+// Déterminer le joueur courant
+$stmt = $pdo->prepare("SELECT current_player FROM parties WHERE id = ?");
+$stmt->execute([$partie_id]);
+$current_player = $stmt->fetchColumn();
 ?>
 
 <!DOCTYPE html>
@@ -214,16 +232,26 @@ $current_player = 3;
     </div>
 
     <script>
-        let currentPosition = <?= $_SESSION['player_positions'][$current_player - 1] ?>;
-        const portals = <?= json_encode($portals) ?>;
-        const blackholes = <?= json_encode($blackholes) ?>;
-        const playerId = 'player3';
+        // Configuration de base
+        const partieId = <?= $partie_id ?>;
+        const currentPlayer = <?= $current_player ?>;
+        const playerId = 'player' + currentPlayer;
+        let playerPositions = <?= json_encode($positions) ?>;
         let isMoving = false;
+        let isMyTurn = false;
 
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            positionPawns();
+            checkTurn();
+            setInterval(checkTurn, 2000);
+        });
+
+        // Positionnement des pions
         function positionPawns() {
-            <?php for ($i = 1; $i <= 4; $i++): ?>
-                positionPawn('player<?= $i ?>', <?= $_SESSION['player_positions'][$i - 1] ?>);
-            <?php endfor; ?>
+            for (let i = 1; i <= 4; i++) {
+                positionPawn(`player${i}`, playerPositions[i]);
+            }
         }
 
         function positionPawn(pawnId, cellNumber) {
@@ -238,74 +266,103 @@ $current_player = 3;
             pawn.style.top = `${rect.top - boardRect.top + rect.height*0.2}px`;
             pawn.style.width = `${rect.width*0.6}px`;
             pawn.style.height = `${rect.height*0.6}px`;
-            pawn.style.animation = 'pawn-glow 2s infinite';
+            
+            if (parseInt(pawnId.replace('player', '')) === currentPlayer) {
+                pawn.style.animation = isMyTurn ? 'pawn-glow 1s infinite' : 'none';
+            }
         }
 
-        document.getElementById('dice').addEventListener('click', rollDice);
+        // Vérification du tour et des positions
+        function checkTurn() {
+            fetch(`get_current_player.php?partie=${partieId}`)
+                .then(res => res.json())
+                .then(data => {
+                    isMyTurn = (data.current === currentPlayer);
+                    updateDiceVisibility();
+                    fetchPlayerPositions();
+                });
+        }
+
+        function fetchPlayerPositions() {
+            fetch(`get_positions.php?partie=${partieId}`)
+                .then(res => res.json())
+                .then(data => {
+                    for (let i = 1; i <= 4; i++) {
+                        if (playerPositions[i] !== data[i]) {
+                            animateMovement(`player${i}`, playerPositions[i], data[i]);
+                            playerPositions[i] = data[i];
+                        }
+                    }
+                });
+        }
+
+        // Animation des mouvements
+        function animateMovement(pawnId, from, to) {
+            if (isMoving) return;
+            isMoving = true;
+            
+            const steps = Math.abs(to - from);
+            const direction = to > from ? 1 : -1;
+            let currentStep = 0;
+            
+            const interval = setInterval(() => {
+                if (currentStep < steps) {
+                    positionPawn(pawnId, from + (direction * currentStep));
+                    currentStep++;
+                } else {
+                    clearInterval(interval);
+                    positionPawn(pawnId, to);
+                    checkSpecialCells(pawnId, to);
+                    isMoving = false;
+                }
+            }, 300);
+        }
+
+        function checkSpecialCells(pawnId, position) {
+            const portals = <?= json_encode($portals) ?>;
+            const blackholes = <?= json_encode($blackholes) ?>;
+            
+            if (portals[position]) {
+                setTimeout(() => {
+                    animateMovement(pawnId, position, portals[position]);
+                }, 500);
+            } else if (Object.values(blackholes).includes(position)) {
+                const entry = Object.entries(blackholes).find(([_, end]) => end === position);
+                setTimeout(() => {
+                    animateMovement(pawnId, position, parseInt(entry[0]));
+                }, 500);
+            }
+        }
+
+        // Gestion du dé
+        function updateDiceVisibility() {
+            const dice = document.getElementById('dice');
+            if (isMyTurn) {
+                dice.style.cursor = 'pointer';
+                dice.onclick = rollDice;
+            } else {
+                dice.style.cursor = 'default';
+                dice.onclick = null;
+            }
+        }
 
         function rollDice() {
-            if (isMoving) return;
+            if (!isMyTurn || isMoving) return;
             
             const dice = document.getElementById('dice');
             dice.textContent = '...';
             dice.classList.add('rolling');
             
-            setTimeout(() => {
-                const roll = Math.floor(Math.random() * 6) + 1;
-                dice.textContent = roll;
-                dice.classList.remove('rolling');
-                
-                movePlayer(roll);
-            }, 1500);
+            fetch(`joueur_lance.php?partie=${partieId}&joueur=${currentPlayer}`)
+                .then(res => res.json())
+                .then(data => {
+                    setTimeout(() => {
+                        dice.textContent = data.de;
+                        dice.classList.remove('rolling');
+                        fetchPlayerPositions(); // Force update
+                    }, 1000);
+                });
         }
-
-        function movePlayer(steps) {
-            isMoving = true;
-            let newPosition = currentPosition + steps;
-            
-            let step = 0;
-            const moveInterval = setInterval(() => {
-                if (step < steps) {
-                    step++;
-                    positionPawn(playerId, currentPosition + step);
-                } else {
-                    clearInterval(moveInterval);
-                    
-                    if (portals[newPosition]) {
-                        newPosition = portals[newPosition];
-                        setTimeout(() => {
-                            positionPawn(playerId, newPosition);
-                            checkGameStatus();
-                        }, 500);
-                    } else if (Object.values(blackholes).includes(newPosition)) {
-                        const entry = Object.entries(blackholes).find(([_, end]) => end === newPosition);
-                        newPosition = parseInt(entry[0]);
-                        setTimeout(() => {
-                            positionPawn(playerId, newPosition);
-                            checkGameStatus();
-                        }, 500);
-                    } else {
-                        checkGameStatus();
-                    }
-                    
-                    currentPosition = newPosition;
-                    isMoving = false;
-                    
-                    fetch('update_position.php?player=3&position=' + newPosition)
-                        .catch(err => console.error('Erreur de mise à jour:', err));
-                }
-            }, 300);
-        }
-
-        function checkGameStatus() {
-            if (currentPosition >= 100) {
-                setTimeout(() => {
-                    alert('Félicitations ! Le joueur jaune a gagné !');
-                }, 500);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', positionPawns);
     </script>
 </body>
 </html>

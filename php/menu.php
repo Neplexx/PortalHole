@@ -12,64 +12,76 @@ $pseudo = htmlspecialchars($_SESSION['pseudo']);
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Menu - Jeu multi joueurs</title>
-  <style>
-    body {
-      background-color: #003366; /* bleu foncé */
-      color: #ffcc00; /* jaune */
-      font-family: Arial, sans-serif;
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-    header {
-      display: flex;
-      justify-content: flex-end;
-      padding: 15px 30px;
-      background-color: #0059b3; /* bleu moyen */
-      font-weight: bold;
-      font-size: 1.1em;
-    }
-    main {
-      flex-grow: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 50px;
-    }
-    .btn {
-      background-color: #ffcc00;
-      color: #003366;
-      padding: 25px 50px;
-      font-size: 1.5em;
-      font-weight: bold;
-      border: none;
-      border-radius: 15px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      box-shadow: 0 4px 8px rgba(255, 204, 0, 0.5);
-      text-decoration: none;
-      text-align: center;
-      display: inline-block;
-      user-select: none;
-    }
-    .btn:hover {
-      background-color: #e6b800;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Menu - PortalHole</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #4b6cb7, #182848);
+            font-family: 'Segoe UI', sans-serif;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        header {
+            padding: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .menu-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .menu-title {
+            margin-bottom: 40px;
+            font-size: 24px;
+        }
+
+        .menu-options {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 300px;
+        }
+
+        .menu-btn {
+            background-color: #00c9ff;
+            color: #fff;
+            border: none;
+            padding: 15px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .menu-btn:hover {
+            background-color: #009ec3;
+        }
+    </style>
 </head>
 <body>
+    <header>
+        Bonjour, <?php echo $pseudo; ?>
+    </header>
 
-<header>
-  Bonjour, <?php echo $pseudo; ?>
-</header>
-
-<main>
-  <a href="host.php" class="btn" role="button">Héberger une partie</a>
-  <a href="join.php" class="btn" role="button">Rejoindre une partie</a>
-</main>
-
+    <div class="menu-container">
+        <h1 class="menu-title">Menu Principal</h1>
+        <div class="menu-options">
+            <a href="host.php" class="menu-btn">Héberger une partie</a>
+            <a href="join.php" class="menu-btn">Rejoindre une partie</a>
+        </div>
+    </div>
 </body>
 </html>

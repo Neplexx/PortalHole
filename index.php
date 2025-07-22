@@ -11,71 +11,80 @@ if (isset($_POST['pseudo']) && !empty(trim($_POST['pseudo']))) {
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Bienvenue - Jeu multi joueurs</title>
-  <style>
-    body {
-      background-color: #003366; /* bleu foncé */
-      color: #ffcc00; /* jaune */
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .container {
-      background-color: #0059b3; /* bleu moyen */
-      padding: 30px 40px;
-      border-radius: 12px;
-      box-shadow: 0 0 15px rgba(255, 204, 0, 0.7);
-      text-align: center;
-      width: 320px;
-    }
-    h1 {
-      margin-bottom: 25px;
-      font-weight: bold;
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      margin-bottom: 20px;
-      outline: none;
-    }
-    button {
-      background-color: #ffcc00;
-      border: none;
-      padding: 12px 25px;
-      border-radius: 8px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #003366;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    button:hover {
-      background-color: #e6b800;
-    }
-    small {
-      display: block;
-      margin-top: 15px;
-      color: #cfcf85;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Bienvenue - PortalHole</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #4b6cb7, #182848);
+            font-family: 'Segoe UI', sans-serif;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .welcome-box {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 30px;
+            width: 350px;
+            box-shadow: 0 0 12px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        h1 {
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: none;
+            border-radius: 6px;
+            background-color: rgba(255,255,255,0.2);
+            color: #fff;
+            font-size: 16px;
+        }
+
+        input[type="text"]::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+
+        button {
+            background-color: #00c9ff;
+            color: #fff;
+            border: none;
+            padding: 12px 25px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #009ec3;
+        }
+
+        .info {
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+    </style>
 </head>
 <body>
-
-  <div class="container">
-    <h1>Bienvenue</h1>
-    <form method="POST" action="">
-      <input type="text" name="pseudo" placeholder="Entrez votre nom" required maxlength="20" />
-      <button type="submit">Continuer</button>
-    </form>
-    <small>Jouez jusqu'à 8 joueurs</small>
-  </div>
-
+    <div class="welcome-box">
+        <h1>Bienvenue sur PortalHole</h1>
+        <form method="POST" action="">
+            <input type="text" name="pseudo" placeholder="Entrez votre pseudo" required maxlength="20" />
+            <button type="submit">Continuer</button>
+        </form>
+        <div class="info">Jouez jusqu'à 8 joueurs</div>
+    </div>
 </body>
 </html>

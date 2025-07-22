@@ -21,9 +21,9 @@ if (!$pseudo) {
 $stmt = $pdo->prepare("SELECT id FROM joueurs WHERE pseudo = ? AND partie_id = ?");
 $stmt->execute([$pseudo, $partie_id]);
 if ($stmt->rowCount() == 0) {
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM joueurs WHERE partie_id = ?");
+    $stmt = $pdo->prepare("SELECT COALESCE(MAX(numero), 0) + 1 FROM joueurs WHERE partie_id = ?");
     $stmt->execute([$partie_id]);
-    $numero = $stmt->fetchColumn() + 1;
+    $numero = $stmt->fetchColumn();
 
     $pdo->prepare("INSERT INTO joueurs (pseudo, partie_id, est_hote, numero) VALUES (?, ?, 0, ?)")
         ->execute([$pseudo, $partie_id, $numero]);
@@ -118,12 +118,15 @@ $est_hote = $joueur['est_hote'] ?? 0;
                 .then(data => {
                     if (data.deleted) {
                         window.location.href = "menu.php";
+                    } else if (data.etat === 'en_cours') {
+                        window.location.href = `joueur.php?partie=<?= $partie_id ?>&joueur=${data.joueur_numero}`;
                     } else {
                         document.getElementById("joueurs").innerHTML =
-                            data.map(j => `<div class='joueur'>${j.pseudo}</div>`).join('');
+                            data.joueurs.map(j => `<div class='joueur'>${j.pseudo}</div>`).join('');
                     }
                 });
         }, 1500);
+
     </script>
 </body>
 </html>

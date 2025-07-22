@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost:3306
--- Généré le : lun. 21 juil. 2025 à 12:43
+-- Généré le : mar. 22 juil. 2025 à 11:50
 -- Version du serveur : 5.7.24
 -- Version de PHP : 8.3.1
 
@@ -32,7 +32,9 @@ CREATE TABLE `joueurs` (
   `pseudo` varchar(50) NOT NULL,
   `partie_id` int(11) NOT NULL,
   `est_hote` tinyint(1) DEFAULT '0',
-  `numero` int(11) NOT NULL
+  `numero` int(11) NOT NULL,
+  `position` int(11) NOT NULL DEFAULT '1',
+  `couleur` varchar(7) DEFAULT '#FFCC00'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -44,6 +46,8 @@ CREATE TABLE `joueurs` (
 CREATE TABLE `parties` (
   `id` int(11) NOT NULL,
   `etat` enum('attente','en_cours','terminee') DEFAULT 'attente',
+  `current_player` int(11) NOT NULL DEFAULT '0',
+  `dice_result` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -56,7 +60,7 @@ CREATE TABLE `parties` (
 --
 ALTER TABLE `joueurs`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `partie_id` (`partie_id`);
+  ADD KEY `partie_id` (`partie_id`,`numero`);
 
 --
 -- Index pour la table `parties`
@@ -72,13 +76,13 @@ ALTER TABLE `parties`
 -- AUTO_INCREMENT pour la table `joueurs`
 --
 ALTER TABLE `joueurs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT pour la table `parties`
 --
 ALTER TABLE `parties`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- Contraintes pour les tables déchargées
