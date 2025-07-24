@@ -8,31 +8,65 @@ if (!isset($_SESSION['pseudo']) || empty($_SESSION['pseudo'])) {
 $partie_id = $_GET['partie'] ?? null;
 if (!$partie_id) die("Partie invalide");
 
-// Connexion à la base de données
 $pdo = new PDO("mysql:host=localhost;dbname=portalholedata", 'root', 'root');
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-// Récupérer les positions depuis la base de données
 $stmt = $pdo->prepare("SELECT numero, position FROM joueurs WHERE partie_id = ? ORDER BY numero");
 $stmt->execute([$partie_id]);
 $joueurs_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-// Récupérer le nombre total de joueurs dans la partie
 $stmt = $pdo->prepare("SELECT COUNT(*) FROM joueurs WHERE partie_id = ?");
 $stmt->execute([$partie_id]);
 $nombre_joueurs = $stmt->fetchColumn();
 
-// Préparer les positions pour le JavaScript
 $positions = [];
 foreach ($joueurs_data as $joueur) {
     $positions[$joueur['numero']] = $joueur['position'];
 }
 
-// Déterminer le joueur courant
 $stmt = $pdo->prepare("SELECT current_player FROM parties WHERE id = ?");
 $stmt->execute([$partie_id]);
 $current_player = $stmt->fetchColumn();
+
+// Portails (téléportation vers le haut uniquement)
+$portals = [
+    3 => 22,
+    14 => 67,
+    28 => 48,
+    37 => 19,
+    59 => 87,
+    63 => 36
+];
+
+$portalColors = [
+    '3-22' => 'portal-blue',
+    '14-67' => 'portal-pink',
+    '28-48' => 'portal-green',
+    '37-19' => 'portal-orange',
+    '59-87' => 'portal-cyan',
+    '63-36' => 'portal-red'
+];
+
+// Trous noirs (chute vers le bas uniquement)
+$blackholes = [
+    4 => 11,
+    8 => 24,
+    32 => 45,
+    42 => 53,
+    56 => 72,
+    77 => 94
+];
+
+$blackholeColors = [
+    '4-11' => 'bh-rouge',
+    '8-24' => 'bh-bleu',
+    '32-45' => 'bh-violet',
+    '42-53' => 'bh-vert',
+    '56-72' => 'bh-gris',
+    '77-94' => 'bh-ciel'
+];
 ?>
+
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -91,22 +125,18 @@ $current_player = $stmt->fetchColumn();
             position: absolute;
             width: 60%;
             height: 60%;
-            top: -30%;
             border-radius: 50%;
             border: 2px solid;
             animation: portal-pulse 2s infinite;
             z-index: 10;
         }
 
-        .portal-blue {
-            border-color: #00b4db;
-            box-shadow: 0 0 15px #00b4db, inset 0 0 8px #00b4db;
-        }
-
-        .portal-orange {
-            border-color: #ff7e5f;
-            box-shadow: 0 0 15px #ff7e5f, inset 0 0 8px #ff7e5f;
-        }
+        .portal-blue   { border-color: #00d4ff; box-shadow: 0 0 15px #00d4ff; }
+        .portal-pink   { border-color: #ff33cc; box-shadow: 0 0 15px #ff33cc; }
+        .portal-green  { border-color: #00ff99; box-shadow: 0 0 15px #00ff99; }
+        .portal-orange { border-color: #ffaa00; box-shadow: 0 0 15px #ffaa00; }
+        .portal-cyan   { border-color: #66ffff; box-shadow: 0 0 15px #66ffff; }
+        .portal-red    { border-color: #ff4444; box-shadow: 0 0 15px #ff4444; }
 
         /* Trous noirs */
         .black-hole {
@@ -114,11 +144,17 @@ $current_player = $stmt->fetchColumn();
             width: 70%;
             height: 70%;
             border-radius: 50%;
-            background: radial-gradient(circle, #434343 0%, #000000 70%);
             box-shadow: 0 0 20px #000;
             z-index: 5;
             animation: black-hole-spin 5s linear infinite;
         }
+
+        .bh-rouge { background: radial-gradient(circle, #270909ff 0%, #000 85%); }
+        .bh-violet { background: radial-gradient(circle, #20133bff 0%, #000 85%); }
+        .bh-bleu { background: radial-gradient(circle, #12133eff 0%, #000 85%); }
+        .bh-vert { background: radial-gradient(circle, #0a2513ff 0%, #000 85%); }
+        .bh-ciel { background: radial-gradient(circle, #292a05ff 0%, #000 85%); }
+        .bh-gris { background: radial-gradient(circle, #111111ff 0%, #000 85%); }
 
         /* Pions */
         .pawn {
@@ -170,6 +206,15 @@ $current_player = $stmt->fetchColumn();
             50% { box-shadow: 0 0 15px 4px currentColor; }
             100% { box-shadow: 0 0 5px 2px currentColor; }
         }
+        @keyframes portal-tilt {
+            0%, 100% { transform: rotateX(60deg) rotateZ(45deg) scale(1); }
+            50% { transform: rotateX(60deg) rotateZ(45deg) scale(1.1); }
+        }
+
+        @keyframes black-hole-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -185,14 +230,22 @@ $current_player = $stmt->fetchColumn();
             ?>
                 <div class="cell" style="grid-row: <?= $row ?>; grid-column: <?= $col ?>;">
                     <span><?= $i ?></span>
-                    
-                    <?php if (array_key_exists($i, $portals)): ?>
-                        <div class="portal <?= $i % 2 ? 'portal-blue' : 'portal-orange' ?>"></div>
-                    <?php endif; ?>
-                    
-                    <?php if (array_key_exists($i, $blackholes)): ?>
-                        <div class="black-hole"></div>
-                    <?php endif; ?>
+
+                    <?php 
+                    foreach ($portalColors as $duo => $class) {
+                        [$a, $b] = explode('-', $duo);
+                        if ($i == (int)$a || $i == (int)$b) {
+                            echo "<div class='portal {$class}'></div>";
+                        }
+                    }
+
+                    foreach ($blackholeColors as $duo => $class) {
+                        [$a, $b] = explode('-', $duo);
+                        if ($i == (int)$a || $i == (int)$b) {
+                            echo "<div class='black-hole {$class}'></div>";
+                        }
+                    }
+                    ?>
                 </div>
             <?php endfor; ?>
             
@@ -292,17 +345,32 @@ $current_player = $stmt->fetchColumn();
         function checkSpecialCells(pawnId, position) {
             const portals = <?= json_encode($portals) ?>;
             const blackholes = <?= json_encode($blackholes) ?>;
-            
+
+            // Portail : uniquement si on est à une entrée (bas vers haut)
             if (portals[position]) {
                 setTimeout(() => {
-                    animateMovement(pawnId, position, portals[position]);
-                }, 500);
-            } else if (Object.values(blackholes).includes(position)) {
-                const entry = Object.entries(blackholes).find(([_, end]) => end === position);
-                setTimeout(() => {
-                    animateMovement(pawnId, position, parseInt(entry[0]));
-                }, 500);
+                    animateTeleportation(pawnId, portals[position]);
+                    playerPositions[parseInt(pawnId.replace('player', ''))] = portals[position];
+                }, 300);
             }
+
+            // Trou noir : uniquement si on est à une entrée (haut vers bas)
+            else if (blackholes[position]) {
+                setTimeout(() => {
+                    animateTeleportation(pawnId, blackholes[position]);
+                    playerPositions[parseInt(pawnId.replace('player', ''))] = blackholes[position];
+                }, 300);
+            }
+        }
+        function animateTeleportation(pawnId, to) {
+            const pawn = document.getElementById(pawnId);
+            pawn.style.transition = 'opacity 0.3s ease';
+            pawn.style.opacity = 0;
+
+            setTimeout(() => {
+                positionPawn(pawnId, to);
+                pawn.style.opacity = 1;
+            }, 300);
         }
     </script>
 </body>
