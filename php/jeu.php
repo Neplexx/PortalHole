@@ -17,8 +17,13 @@ $stmt = $pdo->prepare("SELECT numero, position FROM joueurs WHERE partie_id = ? 
 $stmt->execute([$partie_id]);
 $joueurs_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Récupérer le nombre total de joueurs dans la partie
+$stmt = $pdo->prepare("SELECT COUNT(*) FROM joueurs WHERE partie_id = ?");
+$stmt->execute([$partie_id]);
+$nombre_joueurs = $stmt->fetchColumn();
+
 // Préparer les positions pour le JavaScript
-$positions = [1 => 1, 2 => 1, 3 => 1, 4 => 1]; // Valeurs par défaut
+$positions = [];
 foreach ($joueurs_data as $joueur) {
     $positions[$joueur['numero']] = $joueur['position'];
 }
@@ -144,39 +149,10 @@ $current_player = $stmt->fetchColumn();
         .pawn-2 { background: #00ccff; color: #00ccff; }
         .pawn-3 { background: #ffcc00; color: #ffcc00; }
         .pawn-4 { background: #aa66ff; color: #aa66ff; }
-
-        /* Dé */
-        .dice-container {
-            position: absolute;
-            bottom: -80px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-        }
-
-        .dice {
-            width: 60px;
-            height: 60px;
-            background: white;
-            border-radius: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-            user-select: none;
-        }
-
-        .dice.rolling {
-            animation: dice-roll 0.5s linear 3;
-        }
-
-        @keyframes dice-roll {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .pawn-5 { background: #00ff99; color: #00ff99; }
+        .pawn-6 { background: #ff6600; color: #ff6600; }
+        .pawn-7 { background: #66ff33; color: #66ff33; }
+        .pawn-8 { background: #ff0099; color: #ff0099; }
 
         @keyframes portal-pulse {
             0% { transform: scale(1); opacity: 0.8; }
@@ -220,14 +196,9 @@ $current_player = $stmt->fetchColumn();
                 </div>
             <?php endfor; ?>
             
-            <div class="pawn pawn-1" id="player1"></div>
-            <div class="pawn pawn-2" id="player2"></div>
-            <div class="pawn pawn-3" id="player3"></div>
-            <div class="pawn pawn-4" id="player4"></div>
-        </div>
-
-        <div class="dice-container">
-            <div class="dice" id="dice">?</div>
+            <?php for ($i = 1; $i <= $nombre_joueurs; $i++): ?>
+                <div class="pawn pawn-<?= $i ?>" id="player<?= $i ?>"></div>
+            <?php endfor; ?>
         </div>
     </div>
 
@@ -238,38 +209,40 @@ $current_player = $stmt->fetchColumn();
         const playerId = 'player' + currentPlayer;
         let playerPositions = <?= json_encode($positions) ?>;
         let isMoving = false;
-        let isMyTurn = false;
+        const nombreJoueurs = <?= $nombre_joueurs ?>;
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', () => {
             positionPawns();
-            checkTurn();
             setInterval(checkTurn, 2000);
         });
 
         // Positionnement des pions
         function positionPawns() {
-            for (let i = 1; i <= 4; i++) {
-                positionPawn(`player${i}`, playerPositions[i]);
+            for (let i = 1; i <= nombreJoueurs; i++) {
+                positionPawn(`player${i}`, playerPositions[i] || 1);
             }
         }
 
         function positionPawn(pawnId, cellNumber) {
-            const cell = document.querySelector(`.cell:nth-child(${101 - cellNumber})`);
             const pawn = document.getElementById(pawnId);
-            if (!cell || !pawn) return;
+            if (!pawn) return;
 
-            const rect = cell.getBoundingClientRect();
-            const boardRect = document.getElementById('gameBoard').getBoundingClientRect();
-            
-            pawn.style.left = `${rect.left - boardRect.left + rect.width*0.2}px`;
-            pawn.style.top = `${rect.top - boardRect.top + rect.height*0.2}px`;
-            pawn.style.width = `${rect.width*0.6}px`;
-            pawn.style.height = `${rect.height*0.6}px`;
-            
-            if (parseInt(pawnId.replace('player', '')) === currentPlayer) {
-                pawn.style.animation = isMyTurn ? 'pawn-glow 1s infinite' : 'none';
-            }
+            // zigzag de la grille
+            const row = 10 - Math.floor((cellNumber - 1) / 10);
+            const isEvenRow = row % 2 === 0;
+            const col = isEvenRow ? 10 - ((cellNumber - 1) % 10) : ((cellNumber - 1) % 10) + 1;
+            // centre case
+            const cellSize = 10;
+            const topPercent = (row - 1 + 0.5) * cellSize;
+            const leftPercent = (col - 1 + 0.5) * cellSize;
+
+            // Ajustement pour centrer le pion
+            pawn.style.top = `calc(${topPercent}% - 3%)`;
+            pawn.style.left = `calc(${leftPercent}% - 3%)`;
+            pawn.style.width = `6%`;
+            pawn.style.height = `6%`;
+            pawn.style.animation = 'none';
         }
 
         // Vérification du tour et des positions
@@ -277,8 +250,6 @@ $current_player = $stmt->fetchColumn();
             fetch(`get_current_player.php?partie=${partieId}`)
                 .then(res => res.json())
                 .then(data => {
-                    isMyTurn = (data.current === currentPlayer);
-                    updateDiceVisibility();
                     fetchPlayerPositions();
                 });
         }
@@ -287,7 +258,7 @@ $current_player = $stmt->fetchColumn();
             fetch(`get_positions.php?partie=${partieId}`)
                 .then(res => res.json())
                 .then(data => {
-                    for (let i = 1; i <= 4; i++) {
+                    for (let i = 1; i <= nombreJoueurs; i++) {
                         if (playerPositions[i] !== data[i]) {
                             animateMovement(`player${i}`, playerPositions[i], data[i]);
                             playerPositions[i] = data[i];
@@ -332,36 +303,6 @@ $current_player = $stmt->fetchColumn();
                     animateMovement(pawnId, position, parseInt(entry[0]));
                 }, 500);
             }
-        }
-
-        // Gestion du dé
-        function updateDiceVisibility() {
-            const dice = document.getElementById('dice');
-            if (isMyTurn) {
-                dice.style.cursor = 'pointer';
-                dice.onclick = rollDice;
-            } else {
-                dice.style.cursor = 'default';
-                dice.onclick = null;
-            }
-        }
-
-        function rollDice() {
-            if (!isMyTurn || isMoving) return;
-            
-            const dice = document.getElementById('dice');
-            dice.textContent = '...';
-            dice.classList.add('rolling');
-            
-            fetch(`joueur_lance.php?partie=${partieId}&joueur=${currentPlayer}`)
-                .then(res => res.json())
-                .then(data => {
-                    setTimeout(() => {
-                        dice.textContent = data.de;
-                        dice.classList.remove('rolling');
-                        fetchPlayerPositions(); // Force update
-                    }, 1000);
-                });
         }
     </script>
 </body>
