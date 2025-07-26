@@ -127,8 +127,10 @@ $blackholeColors = [
             height: 60%;
             border-radius: 50%;
             border: 2px solid;
-            animation: portal-pulse 2s infinite;
+            animation: portal-pulse 2s infinite, portal-spin 4s linear infinite;
             z-index: 10;
+            background-image: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 70%);
+            filter: drop-shadow(0 0 5px currentColor);
         }
 
         .portal-blue   { border-color: #00d4ff; box-shadow: 0 0 15px #00d4ff; }
@@ -146,15 +148,16 @@ $blackholeColors = [
             border-radius: 50%;
             box-shadow: 0 0 20px #000;
             z-index: 5;
-            animation: black-hole-spin 5s linear infinite;
+            animation: black-hole-spin 5s linear infinite, black-hole-pulse 4s ease-in-out infinite;
+            filter: blur(1px) brightness(0.9);
         }
 
-        .bh-rouge { background: radial-gradient(circle, #270909ff 0%, #000 85%); }
-        .bh-violet { background: radial-gradient(circle, #20133bff 0%, #000 85%); }
-        .bh-bleu { background: radial-gradient(circle, #12133eff 0%, #000 85%); }
-        .bh-vert { background: radial-gradient(circle, #0a2513ff 0%, #000 85%); }
-        .bh-ciel { background: radial-gradient(circle, #292a05ff 0%, #000 85%); }
-        .bh-gris { background: radial-gradient(circle, #111111ff 0%, #000 85%); }
+        .bh-rouge { background: radial-gradient(circle, #270909ff 0%, #000 95%); }
+        .bh-violet { background: radial-gradient(circle, #20133bff 0%, #000 95%); }
+        .bh-bleu { background: radial-gradient(circle, #12133eff 0%, #000 95%); }
+        .bh-vert { background: radial-gradient(circle, #0a2513ff 0%, #000 95%); }
+        .bh-ciel { background: radial-gradient(circle, #292a05ff 0%, #000 95%); }
+        .bh-gris { background: radial-gradient(circle, #111111ff 0%, #000 95%); }
 
         /* Pions */
         .pawn {
@@ -192,8 +195,13 @@ $blackholeColors = [
 
         @keyframes portal-pulse {
             0% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 1; }
             100% { transform: scale(1); opacity: 0.8; }
+        }
+        
+        @keyframes black-hole-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1, 0.9); }
         }
 
         @keyframes black-hole-spin {
@@ -391,7 +399,7 @@ $blackholeColors = [
                 positionPawn(pawnId, newPos);
                 pawn.style.transform = "scale(1.2) rotate(0deg)";
                 pawn.style.opacity = "1";
-                pawn.style.boxShadow = "0 0 15px 5px cyan";
+                pawn.style.boxShadow = "0 0 15px 5px rgba(243, 238, 238, 0.7)";
                 setTimeout(() => {
                     pawn.style.boxShadow = "";
                     if (callback) callback();
@@ -410,7 +418,7 @@ $blackholeColors = [
                 pawn.style.transition = "all 0.5s ease-out";
                 pawn.style.transform = "scale(1.2)";
                 pawn.style.opacity = "1";
-                pawn.style.boxShadow = "0 0 10px 2px rgba(255,0,0,0.7)";
+                pawn.style.boxShadow = "0 0 10px 2px rgba(30, 29, 29, 0.7)";
                 setTimeout(() => {
                     pawn.style.boxShadow = "";
                     if (callback) callback();
