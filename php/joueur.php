@@ -111,7 +111,16 @@ if ($stmt->fetchColumn() === 'terminee') {
 
     // Initialisation
     checkTurn();
-    setInterval(checkTurn, 2000);
+    setInterval(() => {
+        checkTurn();
+        fetch(`partie_etat.php?partie=${partieId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.etat === 'terminee') {
+                    window.location.href = "menu.php";
+                }
+            });
+    }, 2000);
 
     // Gestion du tour
     function checkTurn() {

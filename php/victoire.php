@@ -10,17 +10,14 @@ $partie_id = $_GET['partie'] ?? null;
 
 if (!$partie_id) die("Partie invalide");
 
-// Récupérer les infos de la partie
 $stmt = $pdo->prepare("SELECT current_player FROM parties WHERE id = ?");
 $stmt->execute([$partie_id]);
 $gagnant_num = $stmt->fetchColumn();
 
-// Récupérer le pseudo du gagnant
 $stmt = $pdo->prepare("SELECT pseudo FROM joueurs WHERE partie_id = ? AND numero = ?");
 $stmt->execute([$partie_id, $gagnant_num]);
 $gagnant = $stmt->fetchColumn();
 
-// Récupérer tous les joueurs
 $stmt = $pdo->prepare("SELECT numero, pseudo FROM joueurs WHERE partie_id = ? ORDER BY numero");
 $stmt->execute([$partie_id]);
 $joueurs = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -73,6 +70,7 @@ $joueurs = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     <h3>Classement :</h3>
     <?php foreach ($joueurs as $joueur): ?>
+        <?php if ($joueur['numero'] == 0) continue; ?>
         <div class="joueur <?= $joueur['numero'] == $gagnant_num ? 'gagnant' : '' ?>">
             Joueur <?= $joueur['numero'] ?>: <?= htmlspecialchars($joueur['pseudo']) ?>
         </div>
