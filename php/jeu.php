@@ -344,36 +344,26 @@ $blackholeColors = [
         }
 
         function checkSpecialCells(pawnId, position, fromPosition) {
-            console.group("[EFFETS SPÉCIAUX] Joueur:", pawnId, "De:", fromPosition, "→", position);
-
             const portals = <?php echo json_encode($portals_array ?? []); ?>;
             const blackholes = <?php echo json_encode($blackholes_array ?? []); ?>;
 
             if (portals[position] !== undefined) {
                 const newPos = portals[position];
-                console.log("PORTAL ️↗️", position, "→", newPos);
-                
-                if (fromPosition < position) {
-                    console.log("ACTIVATION (mouvement ascendant)");
-                    animatePortalEffect(pawnId, newPos, position);
-                    console.groupEnd();
-                    return;
-                }
+                playerPositions[pawnId.replace('player', '')] = newPos;
+                updatePlayerPosition(pawnId.replace('player', ''), newPos);
+                animatePortalEffect(pawnId, newPos);
+                console.groupEnd();
+                return true;
             }
+            
             if (blackholes[position] !== undefined) {
                 const newPos = blackholes[position];
-                console.log("TROU NOIR ️↘️", position, "→", newPos);
-                
-                if (fromPosition > position) {
-                    console.log("ACTIVATION (mouvement descendant)");
-                    animateBlackHoleEffect(pawnId, newPos, position);
-                    console.groupEnd();
-                    return;
-                }
+                playerPositions[pawnId.replace('player', '')] = newPos;
+                updatePlayerPosition(pawnId.replace('player', ''), newPos);
+                animateBlackHoleEffect(pawnId, newPos);
+                console.groupEnd();
+                return true;
             }
-
-            console.log("AUCUN EFFET ACTIVÉ");
-            console.groupEnd();
         }
 
 
@@ -383,22 +373,21 @@ $blackholeColors = [
             pawn.style.transition = "all 0.5s ease-out";
             pawn.style.transform = "scale(0.1) rotate(360deg)";
             pawn.style.opacity = "0";
+            
             setTimeout(() => {
                 positionPawn(pawnId, newPos);
-                callback();
                 pawn.style.transform = "scale(1.2) rotate(0deg)";
                 pawn.style.opacity = "1";
                 pawn.style.boxShadow = "0 0 15px 5px cyan";
-                setTimeout(() => pawn.style.boxShadow = "", 1000);
+                setTimeout(() => {
+                    pawn.style.boxShadow = "";
+                    if (callback) callback();
+                }, 1000);
             }, 500);
         }
 
         function animateBlackHoleEffect(pawnId, newPos, callback) {
             const pawn = document.getElementById(pawnId);
-            if (!pawn) {
-                console.error("Pion non trouvé:", pawnId);
-                return;
-            }
             pawn.style.transition = "all 0.7s cubic-bezier(0.68, -0.6, 0.32, 1.6)";
             pawn.style.transform = "scale(0.1) rotate(720deg)";
             pawn.style.opacity = "0.5";
@@ -409,18 +398,26 @@ $blackholeColors = [
                 pawn.style.transform = "scale(1.2)";
                 pawn.style.opacity = "1";
                 pawn.style.boxShadow = "0 0 10px 2px rgba(255,0,0,0.7)";
-                setTimeout(() => pawn.style.boxShadow = "", 800);
-                callback();
+                setTimeout(() => {
+                    pawn.style.boxShadow = "";
+                    if (callback) callback();
+                }, 800);
             }, 700);
         }
-
-        function updatePlayerPosition(pawnId, newPos) {
-            const playerNum = pawnId.replace('player', '');
-            playerPositions[playerNum] = newPos;
-            
-            fetch(`update_position.php?partie=${partieId}&joueur=${playerNum}&position=${newPos}`)
-                .then(() => console.log(`DB: Joueur ${playerNum} → ${newPos}`))
-                .catch(e => console.error("Erreur DB:", e));
+        function updatePlayerPosition(playerNum, newPosition) {
+            fetch('update_position.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `partie=${partieId}&joueur=${playerNum}&position=${newPosition}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    playerPositions[playerNum] = newPosition;
+                }
+            });
         }
 
     </script>
