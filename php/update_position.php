@@ -1,6 +1,7 @@
 <?php
 session_start();
 $pdo = new PDO("mysql:host=localhost;dbname=portalholedata", 'root', 'root');
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 $partie_id = $_POST['partie'] ?? die(json_encode(["status" => "error"]));
 $joueur = $_POST['joueur'] ?? die(json_encode(["status" => "error"]));

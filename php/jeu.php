@@ -249,8 +249,9 @@ $blackholeColors = [
                 </div>
             <?php endfor; ?>
             
-            <?php for ($i = 1; $i <= $nombre_joueurs; $i++): ?>
+            <?php for ($i = 1; $i <= $nombre_joueurs-1; $i++): ?>
                 <div class="pawn pawn-<?= $i ?>" id="player<?= $i ?>"></div>
+                <script>console.log("i =", <?= $i ?>, "nombre_joueurs =", <?= $nombre_joueurs ?>);</script>
             <?php endfor; ?>
         </div>
     </div>
@@ -262,14 +263,22 @@ $blackholeColors = [
         const playerId = 'player' + currentPlayer;
         let playerPositions = <?= json_encode($positions) ?>;
         let isMoving = false;
-        const nombreJoueurs = <?= $nombre_joueurs ?>;
+        const nombreJoueurs = <?= $nombre_joueurs-1 ?>;
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', () => {
             positionPawns();
             setInterval(checkTurn, 2000);
         });
-
+        setInterval(() => {
+            fetch(`partie_etat.php?partie=${partieId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.etat === 'terminee') {
+                        window.location.href = "victoire.php?partie=" + partieId;
+                    }
+                });
+        }, 2000);
         // Positionnement des pions
         function positionPawns() {
             for (let i = 1; i <= nombreJoueurs; i++) {
@@ -311,6 +320,10 @@ $blackholeColors = [
             fetch(`get_positions.php?partie=${partieId}`)
                 .then(res => res.json())
                 .then(data => {
+                    if (data.victoire) {
+                        window.location.href = "victoire.php?partie=" + partieId;
+                        return;
+                    }
                     for (let i = 1; i <= nombreJoueurs; i++) {
                         if (playerPositions[i] !== data[i]) {
                             animateMovement(`player${i}`, playerPositions[i], data[i]);

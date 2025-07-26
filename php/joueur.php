@@ -11,6 +11,15 @@ $numero = $_GET['joueur'] ?? null;
 if (!$partie_id || !$numero) {
     die("Paramètres manquants.");
 }
+$pdo = new PDO("mysql:host=localhost;dbname=portalholedata", 'root', 'root');
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+$stmt = $pdo->prepare("SELECT etat FROM parties WHERE id = ?");
+$stmt->execute([$partie_id]);
+if ($stmt->fetchColumn() === 'terminee') {
+    header("Location: victoire.php?partie=$partie_id");
+    exit;
+}
 ?>
 
 <!DOCTYPE html>

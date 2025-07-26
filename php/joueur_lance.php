@@ -20,26 +20,36 @@ $stmt->execute([$partie_id, $joueur]);
 $position = $stmt->fetchColumn();
 
 if ($position >= 100) {
+    $pdo->prepare("UPDATE parties SET etat = 'terminee', current_player = ? WHERE id = ?")
+        ->execute([$joueur, $partie_id]);
+    
     echo json_encode([
         "position" => 100,
         "de" => 0,
-        "suivant" => $joueur,
-        "victoire" => true
+        "victoire" => true,
+        "redirect" => "victoire.php?partie=".$partie_id."&gagnant=".$joueur
     ]);
     exit;
 }
 
 $de = random_int(1, 6);
-
 $nouvelle_position = $position + $de;
-if ($nouvelle_position > 100) {
-    $nouvelle_position = 100 - ($nouvelle_position - 100);
-}
 
 $stmt = $pdo->prepare("UPDATE joueurs SET position = ? WHERE partie_id = ? AND numero = ?");
 $stmt->execute([$nouvelle_position, $partie_id, $joueur]);
 
-$victoire = ($nouvelle_position == 100);
+if ($nouvelle_position >= 100) {
+    $pdo->prepare("UPDATE parties SET etat = 'terminee', current_player = ? WHERE id = ?")
+        ->execute([$joueur, $partie_id]);
+    
+    echo json_encode([
+        "position" => $nouvelle_position,
+        "de" => $de,
+        "victoire" => true,
+        "redirect" => "victoire.php?partie=".$partie_id."&gagnant=".$joueur
+    ]);
+    exit;
+}
 
 $stmt = $pdo->prepare("SELECT numero FROM joueurs 
                       WHERE partie_id = ? AND est_hote = 0 AND position < 100
@@ -70,6 +80,6 @@ echo json_encode([
     "position" => $nouvelle_position,
     "de" => $de,
     "suivant" => $suivant,
-    "victoire" => $victoire,
+    "victoire" => false
 ]);
 ?>
